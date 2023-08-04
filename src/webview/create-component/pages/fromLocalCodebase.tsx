@@ -28,7 +28,12 @@ type RecommendedDevfileState = {
     isDevfileExistsInFolder: boolean;
 }
 
-export function FromLocalCodebase({ setCurrentView }) {
+type FromLocalCodebaseProps = {
+    setCurrentView: React.Dispatch<React.SetStateAction<string>>;
+    rootFolder?: string;
+};
+
+export function FromLocalCodebase(props: FromLocalCodebaseProps) {
     const [currentPage, setCurrentPage] = React.useState<CurrentPage>('fromLocalCodeBase');
     const [workspaceFolders, setWorkspaceFolders] = React.useState<Uri[]>([]);
     const [projectFolder, setProjectFolder] = React.useState('');
@@ -96,6 +101,15 @@ export function FromLocalCodebase({ setCurrentView }) {
 
     React.useEffect(() => {
         window.vscodeApi.postMessage({ action: 'getWorkspaceFolders' });
+        if (props.rootFolder) {
+            setProjectFolder(props.rootFolder);
+            const componentNameFromFolder: string = props.rootFolder.substring(props.rootFolder.lastIndexOf('/') + 1);
+            setComponentName(componentNameFromFolder);
+            window.vscodeApi.postMessage({
+                action: 'validateComponentName',
+                data: componentNameFromFolder,
+            });
+        }
     }, []);
 
     function handleNext() {
@@ -173,9 +187,11 @@ export function FromLocalCodebase({ setCurrentView }) {
                         {!recommendedDevfile.showRecommendation ? (
                             <>
                                 <Stack direction='row' spacing={1} marginTop={2}>
-                                    <Button variant='text' onClick={() => { setCurrentView('home') }}>
-                                        BACK
-                                    </Button>
+                                    {!props.rootFolder &&
+                                        <Button variant='text' onClick={() => { props.setCurrentView('home') }}>
+                                            BACK
+                                        </Button>
+                                    }
                                     <Button
                                         variant='contained'
                                         disabled={!isComponentNameFieldValid || componentName.length === 0 || projectFolder.length === 0 || recommendedDevfile.isDevfileExistsInFolder}

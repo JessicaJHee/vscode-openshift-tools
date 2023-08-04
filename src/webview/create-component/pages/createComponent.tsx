@@ -18,6 +18,7 @@ interface VSCodeMessage {
     themeValue?: number;
     availableServices?: string[];
     componentName?: string;
+    rootFolder?: string;
 }
 
 function SelectStrategy({ setCurrentView }) {
@@ -64,10 +65,16 @@ function SelectStrategy({ setCurrentView }) {
 export default function CreateComponent() {
     const [theme, setTheme] = React.useState<Theme>(createVSCodeTheme('light'));
     const [currentView, setCurrentView] = React.useState('home');
+    const [folderPath, setFolderPath] = React.useState<string>(undefined);
 
     const respondToMessage = function (message: MessageEvent<VSCodeMessage>) {
         if (message.data.action === 'setTheme') {
             setTheme(createVSCodeTheme(message.data.themeValue === 1 ? 'light' : 'dark'));
+        } else if (message.data.action === 'initFromRootFolder') {
+            if (message.data.rootFolder && message.data.rootFolder.length !== 0) {
+                setCurrentView('fromLocalCodeBase');
+            }
+            setFolderPath(message.data.rootFolder);
         }
     };
 
@@ -88,7 +95,15 @@ export default function CreateComponent() {
             case 'fromLocalCodeBase':
                 return (
                     <div style={{ marginRight: '5em' }}>
-                        <FromLocalCodebase setCurrentView={setCurrentView} />
+                        {folderPath != undefined &&
+                            <>
+                                {folderPath.length == 0
+                                    ? <FromLocalCodebase setCurrentView={setCurrentView} />
+                                    : <FromLocalCodebase setCurrentView={setCurrentView} rootFolder={folderPath} />
+                                }
+                            </>
+                        }
+
                     </div>
                 );
             case 'fromExistingGitRepo':
@@ -119,7 +134,11 @@ export default function CreateComponent() {
                     paddingBottom: '16px',
                 }}
             >
-                {renderComponent()}
+                {folderPath != undefined &&
+                    <>
+                        {renderComponent()}
+                    </>
+                }
             </Container>
         </ThemeProvider>
     );

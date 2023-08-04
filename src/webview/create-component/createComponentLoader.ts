@@ -43,7 +43,7 @@ export default class CreateComponentLoader {
         return extensions.getExtension(ExtensionID).extensionPath;
     }
 
-    static async loadView(title: string): Promise<WebviewPanel> {
+    static async loadView(title: string, folderPath?: string): Promise<WebviewPanel> {
         if (CreateComponentLoader.panel) {
             CreateComponentLoader.panel.reveal();
             return;
@@ -83,6 +83,13 @@ export default class CreateComponentLoader {
         );
         panel.webview.html = await loadWebviewHtml('createComponentViewer', panel);
         CreateComponentLoader.panel = panel;
+
+        if (folderPath) {
+            panel.webview.postMessage({ action: 'initFromRootFolder', rootFolder: folderPath });
+        } else {
+            panel.webview.postMessage({ action: 'initFromRootFolder', rootFolder: '' });
+        }
+
         return panel;
     }
 
@@ -230,7 +237,7 @@ export default class CreateComponentLoader {
                             templateProject.registryName,
                             templateProject.templateProjectName,
                         );
-                        await sendTelemetry('newComponentCreated', { strategy: 'fromTemplateProject', component_type: templateProject.devfileId, starter_project: templateProject.templateProjectName});
+                        await sendTelemetry('newComponentCreated', { strategy: 'fromTemplateProject', component_type: templateProject.devfileId, starter_project: templateProject.templateProjectName });
                     } else {
                         let strategy: string;
                         // from local codebase or existing git repo
@@ -247,7 +254,7 @@ export default class CreateComponentLoader {
                         }
                         const devfileType = getDevfileType(message.data.devfileDisplayName);
                         await OdoImpl.Instance.createComponentFromLocation(devfileType, componentName, Uri.file(componentFolder));
-                        await sendTelemetry('newComponentCreated', { strategy, component_type: devfileType});
+                        await sendTelemetry('newComponentCreated', { strategy, component_type: devfileType });
                     }
                     CreateComponentLoader.panel.dispose();
                     if (vscode.workspace.workspaceFolders?.some(folder => folder.uri.path === componentFolder)) {
